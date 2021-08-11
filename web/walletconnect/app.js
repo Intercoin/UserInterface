@@ -37,17 +37,14 @@ function init() {
     walletconnect: {
       package: WalletConnectProvider,
       options: {
-        infuraId: "86e084f647d44d1d81e69a8cb07b98a7",
-      }
+        infuraId: "86e084f647d44d1d81e69a8cb07b98a7",      }
     },
   };
 
   web3Modal = new Web3Modal({
     cacheProvider: false, // optional
     providerOptions, // required
-    disableInjectedProvider: false, // optional. For MetaMask / Brave / Opera.
   });
-
   console.log("Web3Modal instance is", web3Modal);
 }
 
