@@ -8,4 +8,6 @@ window.tvWidget = new TradingView.widget({
 	container: 'tv_chart_container',
 	datafeed: Datafeed,
 	library_path: 'charting_library/',
+	debug: true,
+	disabled_features: ['header_symbol_search', 'header_saveload'],
 });

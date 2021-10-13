@@ -16,7 +16,7 @@
   <body>
     <div class="container">
       <div class="container">
-        <div class="col-md-12" style="margin-top: 30px; margin-bottom: 30px;">
+        <div class="col-md-12" style="margin-top: 30px;">
           <div id="prepare">
             <button class="btn btn-primary" id="btn-connect">
               Connect wallet
@@ -26,6 +26,9 @@
 
             <button class="btn btn-primary" id="btn-disconnect">
               Disconnect wallet
+            </button>
+            <button class="btn btn-primary" id="btn-change-network">
+              Change Network
             </button>
             <hr>
 
@@ -42,20 +45,34 @@
           <br>
 
         </div>
-<!--         
-        <div class="col-md-12">
+        
+        <div class="col-md-12" style="margin-bottom: 30px;">
           <form id="select-token">
             <p>Token1</p>
+            <select name="tokens" id="select1">
+              <option value="WETH" name="WETH">WETH</option>
+              <option value="BNB" name="BNB">WBNB</option>
+              <option value="USDT" name="USDT">USDT</option>
+              <option value="USDC" name="USDC">USDC</option>
+              <option value="BUSD" name="BUSD">BUSD</option>
+            </select>
             <input type="text" name="token1"/>
             <p style="margin-top: 10px;">Token2</p>
+            <select name="tokens" id="select2">
+              <option value="WETH" name="WETH">WETH</option>
+              <option value="BNB" name="BNB">WBNB</option>
+              <option value="USDT" name="USDT">USDT</option>
+              <option value="USDC" name="USDC">USDC</option>
+              <option value="BUSD" name="BUSD">BUSD</option>
+            </select>
             <input type="text" name="token2"/>
             <div style="margin-top: 10px;">
               <input type="submit" class="btn btn-primary" value="Draw Graph" />
             </div>
           </form>
         </div>
-         -->
-        <div id="tv_chart_container">
+        
+        <div id="tv_chart_container" style="margin-top: 30px;">
           <!-- This div will contain the Charting Library widget. -->
         </div>
         <!-- <div class="col-md-12" style="margin-top: 30px;">

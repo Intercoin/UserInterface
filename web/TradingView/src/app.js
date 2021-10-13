@@ -1,34 +1,40 @@
+import { parseFullSymbol } from './helpers.js';
 const { ethers, utils } = window.ethers;
 
  // Unpkg imports
 const Web3Modal = window.Web3Modal.default;
 const WalletConnectProvider = window.WalletConnectProvider.default;
-const Fortmatic = window.Fortmatic;
 const evmChains = window.evmChains;
-const LightweightCharts = window.LightweightCharts;
 
 // Web3modal instance
 let web3Modal
 let provider;
 let web3ModalProvider;
 
-let chart;
-let lineSeries;
-let chartData = [];
-
-
 let selectedAccount;
-
-let token1 = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
-let token2 = '0xdac17f958d2ee523a2206206994597c13d831ec7';
 
 let token1Decimals = 18;
 let token2Decimals = 18;
 
-const FACTORY_ADDRESS = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f';
-const BLOCKS_COUNT = 500;
+let token1Symbol = '';
+let token2Symbol = '';
+
+const UNISWAP_FACTORY_ADDRESS = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f';
+const PANCAKESWAP_FACTORY_ADDRESS = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73';
 
 let pairAddress = '0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc';
+
+let subscriptionItem;
+
+let chainName = 'Ethereum';
+
+const TOKEN_ADDRESS = {
+  WETH: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+  BNB: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+  USDT: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+  USDC: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+  BUSD: '0xe9e7cea3dedca5984780bafc599bd69add087d56',
+}
 
 /**
  * Setup the orchestra
@@ -62,11 +68,26 @@ async function init() {
   // Tell Web3modal what providers we have available.
   // Built-in web browser provider (only one can exist as a time)
   // like MetaMask, Brave or Opera is added automatically by Web3modal
+  /*
   const providerOptions = {
     walletconnect: {
       package: WalletConnectProvider,
       options: {
         infuraId: "86e084f647d44d1d81e69a8cb07b98a7",
+      }
+    },
+  };
+  */
+  const providerOptions = {
+    walletconnect: {
+      package: WalletConnectProvider,
+      options: {
+        rpc: {
+          1: "https://eth.getblock.io/mainnet/?api_key=374714c2-ece7-4df0-85a9-64d6db04b0cb",
+          4: "https://eth.getblock.io/testnet/?api_key=374714c2-ece7-4df0-85a9-64d6db04b0cb",
+          56: "https://bsc.getblock.io/mainnet/?api_key=374714c2-ece7-4df0-85a9-64d6db04b0cb",
+          97: "https://bsc.getblock.io/testnet/?api_key=374714c2-ece7-4df0-85a9-64d6db04b0cb",
+        },
       }
     },
   };
@@ -76,7 +97,6 @@ async function init() {
     providerOptions, // required
     disableInjectedProvider: false, // optional. For MetaMask / Brave / Opera.
   });
-  drawGraph();
 
 }
 
@@ -151,6 +171,7 @@ async function onConnect() {
     return;
   }
 
+  checkNetwork(web3ModalProvider.chainId);
   // Subscribe to accounts change
   web3ModalProvider.on("accountsChanged", (accounts) => {
     fetchAccountData();
@@ -158,6 +179,8 @@ async function onConnect() {
 
   // Subscribe to chainId change
   web3ModalProvider.on("chainChanged", (chainId) => {
+    console.log({ chainId });
+    checkNetwork(chainId);
     fetchAccountData();
   });
 
@@ -195,39 +218,127 @@ async function onDisconnect() {
   document.querySelector("#connected").style.display = "none";
 }
 
+/**
+ * 
+ * Check network and update select box
+ */
+function checkNetwork(chainId) {
+  console.log({ chainId });
+  
+  if(chainId == 0x38) {
+    chainName = 'Binance';
+    const ethOption1 = document.querySelector("#select1 option[name='WETH']");
+    const ethOption2 = document.querySelector("#select2 option[name='WETH']");
+    const usdcOption1 = document.querySelector("#select1 option[name='USDC']");
+    const usdcOption2 = document.querySelector("#select2 option[name='USDC']");
+    const bnbOption1 = document.querySelector("#select1 option[name='BNB']");
+    const bnbOption2 = document.querySelector("#select2 option[name='BNB']");
+    const busdOption1 = document.querySelector("#select1 option[name='BUSD']");
+    const busdOption2 = document.querySelector("#select2 option[name='BUSD']");
+    ethOption1.disabled = true;
+    ethOption2.disabled = true;
+    usdcOption1.disabled = true;
+    usdcOption2.disabled = true;
+    bnbOption1.disabled = false;
+    bnbOption2.disabled = false;
+    busdOption1.disabled = false;
+    busdOption2.disabled = false;
+  } else if ( chainId == 0x01) {
+    chainName = 'Ethereum';
+    const bnbOption1 = document.querySelector("#select1 option[name='BNB']");
+    const bnbOption2 = document.querySelector("#select2 option[name='BNB']");
+    const busdOption1 = document.querySelector("#select1 option[name='BUSD']");
+    const busdOption2 = document.querySelector("#select2 option[name='BUSD']");
+    const ethOption1 = document.querySelector("#select1 option[name='WETH']");
+    const ethOption2 = document.querySelector("#select2 option[name='WETH']");
+    const usdcOption1 = document.querySelector("#select1 option[name='USDC']");
+    const usdcOption2 = document.querySelector("#select2 option[name='USDC']");
+    bnbOption1.disabled = true;
+    bnbOption2.disabled = true;
+    busdOption1.disabled = true;
+    busdOption2.disabled = true;
+    ethOption1.disabled = false;
+    ethOption2.disabled = false;
+    usdcOption1.disabled = false;
+    usdcOption2.disabled = false;
+  }
+}
 async function onChangeNetwork() {
-    provider.request({
-        method: 'wallet_addEthereumChain',
-        params: [{
-        chainId: '0x38',
-        chainName: 'Binance Smart Chain',
-        nativeCurrency: {
-            name: 'Binance Coin',
-            symbol: 'BNB',
-            decimals: 18
-        },
-        rpcUrls: ['https://bsc-dataseed.binance.org/'],
-        blockExplorerUrls: ['https://bscscan.com']
-        }]
-        })
-        .catch((error) => {
-        console.log(error)
-        }) 
+  console.log('change network', chainName);
+  if (chainName == 'Ethereum') {
+    try {
+      await web3ModalProvider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x38' }]
+      });
+      chainName = 'Binance';
+    } catch (switchError) {
+      // This error code indicates that the chain has not been added to MetaMask.
+      if (error.code === 4902) {
+        try {
+          await web3ModalProvider.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+            chainId: '0x38',
+            chainName: 'Binance Smart Chain',
+            nativeCurrency: {
+                name: 'Binance Coin',
+                symbol: 'BNB',
+                decimals: 18
+            },
+            rpcUrls: ['https://bsc-dataseed.binance.org/'],
+            blockExplorerUrls: ['https://bscscan.com']
+            }]
+            })
+            .catch((error) => {
+            console.log(error)
+            });
+        } catch (addError) {
+          // handle "add" error
+        }
+      }
+      // handle other "switch" errors
+    }
+  } else {
+    await web3ModalProvider.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0x1' }]
+    });
+    chainName = 'Ethereum';
+  }
+  
+  
 }
 
 async function onSelectToken(evt) {
   evt.preventDefault();
   
-  chartData = [];
+  console.log(window.tvWidget);
   provider.off('block');
 
   const token1 = document.querySelector("#select-token input[name='token1']").value;
   const token2 = document.querySelector("#select-token input[name='token2']").value;
 
-  const factoryFile = await fetch('https://super-vic114.github.io/LiquidityGraph/contracts/uniswap-factory.abi.json');
+  let factoryUrl;
+  let lpUrl;
+
+  if (chainName == 'Ethereum') {
+    factoryUrl = 'https://super-vic114.github.io/LiquidityGraph/contracts/uniswap-factory.abi.json';
+    lpUrl = 'https://super-vic114.github.io/LiquidityGraph/contracts/uniswap-lp.abi.json';
+  } else {
+    factoryUrl = 'https://super-vic114.github.io/LiquidityGraph/contracts/pancakeswap-factory.abi.json';
+    lpUrl = 'https://super-vic114.github.io/LiquidityGraph/contracts/pancakeswap-lp.abi.json';
+  }
+  
+  console.log({factoryUrl});
+  const factoryFile = await fetch(factoryUrl);
   const factoryAbi = await factoryFile.json();
   const signer = provider.getSigner();
-  const factory = new ethers.Contract(FACTORY_ADDRESS, factoryAbi, signer);
+  const factory = new ethers.Contract(
+    chainName == 'Ethereum' ? UNISWAP_FACTORY_ADDRESS : PANCAKESWAP_FACTORY_ADDRESS , 
+    factoryAbi, 
+    signer
+  );
 
   const res = await factory.getPair(token1, token2);
   pairAddress = res;
@@ -235,100 +346,74 @@ async function onSelectToken(evt) {
   console.log({ pairAddress });
 
   // Get Uniswap LP Contract ABI
-  const lpFile = await fetch('https://super-vic114.github.io/LiquidityGraph/contracts/uniswap-lp.abi.json');
+
+  const lpFile = await fetch(lpUrl);
   const lpAbi = await lpFile.json();
   const contract = new ethers.Contract(pairAddress, lpAbi, signer);
 
-  await getDecimals(contract);
-  await getChartData(contract);
+  await getTokenInfos(contract);
   
+  // Generate Symbol
+  const symbol = `${chainName == 'Ethereum' ? 'uniswapv2' : 'Binance'}:${token1Symbol.toUpperCase()}/${token2Symbol.toUpperCase()}`;
+  console.log({ symbol });
+  window.tvWidget.setSymbol(symbol, subscriptionItem.resolution, () => {
+    console.log('callback is called');
+    // console.log({ params });
+  });
+  provider.on("block", blockNumber => onBlock(contract, blockNumber));
 };
 
-async function getChartData(contract) {
+function getNextBarTime(barTime) {
+	const date = new Date(barTime * 1000);
+  const curResolution = subscriptionItem.resolution;
 
-  try {
-      // Get historical data from local storage.
-      // Will be replaced to get from Node.js server
-      const data = JSON.parse(window.localStorage.getItem(pairAddress));
-      const lastBlockNumber = data ? data.at(-1).block : 0;
-      
-      if (data) chartData = data.sort((a, b) => a.block - b.block);
-      
-
-
-      // Get recent block number
-      const startBlock = await provider.getBlockNumber();
-
-      let i = 1;
-
-      // Initialize Loop Values
-      let maxBlocks = startBlock - lastBlockNumber;
-      if (maxBlocks > BLOCKS_COUNT) {
-        maxBlocks = BLOCKS_COUNT;
-        chartData = [];
-      }
-      const progresEl = document.getElementById('progress');
-      while(i < maxBlocks) {
-
-        // Calculate price from getReserves() function
-        const res = await contract.getReserves({ blockTag: startBlock - maxBlocks + i });
-        console.log(`${startBlock - maxBlocks + i}:`, res);
-        const price = Number(res._reserve0) / Number(res._reserve1) * Math.pow(10, token2Decimals - token1Decimals);
-        const index = chartData.findIndex(el => el.time == res._blockTimestampLast);
-
-        if (index >= 0) {
-          chartData[index].value = price;
-          chartData[index].block = startBlock - maxBlocks + i;
-        } else {
-          chartData.push({ block: startBlock - maxBlocks + i, time: res[2], value: price });
-        }
-        progresEl.innerHTML = `Fetching Data From Contract - ${i / maxBlocks * 100}%`;
-        i ++;
-      }
-      progresEl.innerHTML = ``;
-
-      // Save to local storage
-      chartData = chartData.slice(-1000);
-      const sortArr = chartData.sort((a, b) => a.block - b.block);
-      
-      console.log(chartData);
-      
-      setTimeout(() => {
-        window.localStorage.setItem(pairAddress, JSON.stringify(sortArr));
-        lineSeries.setData(sortArr); 
-      }, 100);
-      // Update chart on every new block
-
-      provider.on("block", blockNumber => onBlock(contract, blockNumber));
-  } catch (e) {
-      console.log(e);
-  }
+	if (curResolution.includes('D')) {
+		date.setDate(date.getDate() + 1);	
+	} else {
+		date.setMinutes(date.getMinutes() + curResolution);
+	}
+	return date.getTime() / 1000;
 }
+
 
 async function onBlock(contract, blockNumber) {
   // Emitted on every block change
-  // Caculate price
   const res = await contract.getReserves({ blockTag: blockNumber });
-  const price = Number(res._reserve0) / Number(res._reserve1) * Math.pow(10, token2Decimals - token1Decimals);
   console.log(`${blockNumber}:`, res);
-  // Update price with same timestamp
-  const index = chartData.findIndex(el => el.time == res._blockTimestampLast);
-  
-  if (index >= 0) {
-    chartData[index].value = price;
-    chartData[index].block = blockNumber;
-  } else {
-    chartData.push({ block: blockNumber, time: res[2], value: price });
-  }
 
-  // Sort data array by block number
-  const sortArr = chartData.sort((a, b) => a.block - b.block);
-  console.log(chartData);
+  console.log(Number(res._reserve0));
+  console.log(Number(res._reserve1));
+  // Caculate trade price and time
+  const tradePrice = Number(res._reserve1) / Number(res._reserve0) * Math.pow(10, token1Decimals - token2Decimals);
+  const tradeTime = res._blockTimestampLast;
 
-  setTimeout(() => {
-    window.localStorage.setItem(pairAddress, JSON.stringify(sortArr));  
-    lineSeries.setData(sortArr);
-  }, 100);
+  console.log({ tradePrice, tradeTime });
+
+  const lastDailyBar = subscriptionItem.lastDailyBar;
+  const nextDailyBarTime = getNextBarTime(lastDailyBar.time);
+
+  let bar;
+	if (tradeTime >= nextDailyBarTime) {
+		bar = {
+			time: nextDailyBarTime,
+			open: tradePrice,
+			high: tradePrice,
+			low: tradePrice,
+			close: tradePrice,
+		};
+		console.log('[socket] Generate new bar', bar);
+	} else {
+		bar = {
+			...lastDailyBar,
+			high: Math.max(lastDailyBar.high, tradePrice),
+			low: Math.min(lastDailyBar.low, tradePrice),
+			close: tradePrice,
+		};
+		console.log('[socket] Update the latest bar by price', tradePrice);
+	}
+	subscriptionItem.lastDailyBar = bar;
+
+  subscriptionItem.callback(bar);
   
 }
 
@@ -336,7 +421,7 @@ async function onBlock(contract, blockNumber) {
  * Calculate decimals for tokens to get correct reserves
  */
 
-async function getDecimals(lpContract) {
+async function getTokenInfos(lpContract) {
   
   // Get token addresses
   const token1Address = await lpContract.token0();
@@ -354,28 +439,25 @@ async function getDecimals(lpContract) {
   token1Decimals = await token1Contract.decimals();
   token2Decimals = await token2Contract.decimals();
 
+  token1Symbol = await token1Contract.symbol();
+  token2Symbol = await token2Contract.symbol();
+
+  if (token1Symbol == 'WBNB') token1Symbol = 'BNB';
+  if (token2Symbol == 'WBNB') token2Symbol = 'BNB';
+
   console.log({ token1Decimals, token2Decimals });
 }
 
-function drawGraph() {
-  chart = LightweightCharts.createChart(document.getElementById('chart'), { 
-    width: 980, 
-    height: 610,
-    timeScale: {
-      timeVisible: true,
-      secondVisible: true
-    },
-  });
-  lineSeries = chart.addLineSeries();
-  
-  lineSeries.applyOptions({
-    priceFormat: {
-        type: 'price',
-        precision: 6,
-        minMove: 0.00001,
-    },
-  });
+function onSelect1Change() {
+  const value = document.querySelector("#select1").value;
+  const token1 = document.querySelector("#select-token input[name='token1']");
+  token1.value = TOKEN_ADDRESS[value];
+}
 
+function onSelect2Change() {
+  const value = document.querySelector("#select2").value;
+  const token2 = document.querySelector("#select-token input[name='token2']");
+  token2.value = TOKEN_ADDRESS[value];
 }
 
 /**
@@ -385,5 +467,36 @@ window.addEventListener('load', async () => {
   init();
   document.querySelector("#btn-connect").addEventListener("click", onConnect);
   document.querySelector("#btn-disconnect").addEventListener("click", onDisconnect);
-  // document.querySelector("#select-token").addEventListener("submit", onSelectToken);
+  document.querySelector("#select-token").addEventListener("submit", onSelectToken);
+  document.querySelector("#btn-change-network").addEventListener("click", onChangeNetwork);
+  document.querySelector("#select1").addEventListener("change", onSelect1Change);
+  document.querySelector("#select2").addEventListener("change", onSelect2Change);
 });
+
+export function subscribeOnStream(
+	symbolInfo,
+	resolution,
+	onRealtimeCallback,
+	subscribeUID,
+	onResetCacheNeededCallback,
+	lastDailyBar,
+) {
+	const parsedSymbol = parseFullSymbol(symbolInfo.full_name);
+
+	console.log({ parsedSymbol });
+  console.log({ symbolInfo });
+	
+	subscriptionItem = {
+    symbolInfo: parsedSymbol,
+		subscribeUID,
+		resolution,
+		lastDailyBar,
+    callback: onRealtimeCallback,
+	};
+}
+
+export function unsubscribeFromStream(subscriberUID) {
+	// find a subscription with id === subscriberUID
+	
+}
+

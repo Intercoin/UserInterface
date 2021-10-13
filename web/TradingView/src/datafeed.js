@@ -6,33 +6,13 @@ import {
 import {
 	subscribeOnStream,
 	unsubscribeFromStream,
-} from './streaming.js';
+} from './app.js';
 
 const lastBarsCache = new Map();
 
 const configurationData = {
 	supported_resolutions: ['1', '5', '10', '15', '30', '60', '240', '720', '1D'],
 	exchanges: [
-		{
-            value: 'Bitfinex',
-            name: 'Bitfinex',
-            desc: 'Bitfinex',
-        },
-        {
-            // `exchange` argument for the `searchSymbols` method, if a user selects this exchange
-            value: 'Kraken',
-
-            // filter name
-            name: 'Kraken',
-
-            // full exchange name displayed in the filter popup
-            desc: 'Kraken bitcoin exchange',
-        },
-		{
-		value: 'uniswap',
-		name: 'Uniswap',
-		desc: 'Uniswap',
-	},
 	{
 		// `exchange` argument for the `searchSymbols` method, if a user selects this exchange
 		value: 'uniswapv2',
@@ -63,6 +43,16 @@ const configurationData = {
 		// full exchange name displayed in the filter popup
 		desc: 'Pancakeswap',
 	},
+	{
+		// `exchange` argument for the `searchSymbols` method, if a user selects this exchange
+		value: 'Binance',
+
+		// filter name
+		name: 'Binance',
+
+		// full exchange name displayed in the filter popup
+		desc: 'Binance',
+	},
 	],
 	symbols_types: [{
 		name: 'crypto',
@@ -76,6 +66,7 @@ const configurationData = {
 
 async function getAllSymbols() {
 	const data = await makeApiRequest('data/v3/all/exchanges');
+	console.log({data});
 	let allSymbols = [];
 
 	for (const exchange of configurationData.exchanges) {
@@ -174,7 +165,6 @@ export default {
 			.map(name => `${name}=${encodeURIComponent(urlParameters[name])}`)
 			.join('&');
 		try {
-			console.log({resolution});
 
 			let endpointUrl = `data/histominute`;
 			if (resolution.includes('D')) {
@@ -182,8 +172,12 @@ export default {
 			} else if ( resolution >= 60) {
 				endpointUrl = `data/histohour`;
 			}
-			console.log({ endpointUrl });
+
+			console.log({ query });
+
 			const data = await makeApiRequest(`${endpointUrl}?${query}`);
+
+			console.log({ data });
 			if (data.Response && data.Response === 'Error' || data.Data.length === 0) {
 				// "noData" should be set if there is no data in the requested period.
 				onHistoryCallback([], {
@@ -226,6 +220,7 @@ export default {
 		onResetCacheNeededCallback,
 	) => {
 		console.log('[subscribeBars]: Method call with subscribeUID:', subscribeUID);
+		console.log({ symbolInfo, resolution, onRealtimeCallback, subscribeUID, onRealtimeCallback });
 		subscribeOnStream(
 			symbolInfo,
 			resolution,

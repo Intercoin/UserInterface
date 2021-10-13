@@ -71,7 +71,6 @@ socket.on('m', data => {
 
 function getNextDailyBarTime(barTime) {
 	const date = new Date(barTime * 1000);
-	console.log({curResolution});
 	if (curResolution.includes('D')) {
 		date.setDate(date.getDate() + 1);	
 	} else {
@@ -88,8 +87,12 @@ export function subscribeOnStream(
 	onResetCacheNeededCallback,
 	lastDailyBar,
 ) {
+
+	console.log();
 	curResolution = resolution;
 	const parsedSymbol = parseFullSymbol(symbolInfo.full_name);
+
+	console.log({ parsedSymbol });
 	const channelString = `0~${parsedSymbol.exchange}~${parsedSymbol.fromSymbol}~${parsedSymbol.toSymbol}`;
 	const handler = {
 		id: subscribeUID,
